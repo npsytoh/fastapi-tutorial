@@ -1,6 +1,5 @@
 import datetime
 
-from fastapi import FastAPI
 from pydantic import BaseModel
 from pydantic import Field
 
@@ -13,10 +12,16 @@ class Booking(BaseModel):
     start_datetime: datetime.datetime
     end_datetime: datetime.datetime
 
+    class Config:
+        orm_mode = True
+
 
 class User(BaseModel):
     user_id: int
     user_name: str = Field(max_length=12)
+
+    class Config:
+        orm_mode = True
 
 
 class Room(BaseModel):
@@ -24,21 +29,5 @@ class Room(BaseModel):
     room_name: str = Field(max_length=12)
     capacity: int
 
-
-app = FastAPI()
-
-@app.get('/')
-async def index():
-    return {'message': 'Success'}
-
-@app.post('/bookings')
-async def bookings(bookings: Booking):
-    return {'bookings': bookings}
-
-@app.post('/users')
-async def users(users: User):
-    return {'users': users}
-
-@app.post('/rooms')
-async def rooms(rooms: Room):
-    return {'rooms': rooms}
+    class Config:
+        orm_mode = True
