@@ -1,8 +1,8 @@
 import streamlit as st
 import datetime
-import random
 import requests
 import json
+import pandas as pd
 
 page = st.sidebar.selectbox('Choose your page', ['users', 'rooms', 'bookings'])
 
@@ -49,18 +49,45 @@ elif page == 'rooms':
         st.json(res.json())
 
 elif page == 'bookings':
-    st.title('API Test(Bookings)')
+    st.title('Booking add')
+
+    url_users = 'http://127.0.0.1:8000/users'
+    res = requests.get(url_users)
+    users = res.json()
+    users_dict = {}
+    for user in users:
+        users_dict[user['user_name']] = user['user_id']
+
+    url_rooms = 'http://127.0.0.1:8000/rooms'
+    res = requests.get(url_rooms)
+    rooms = res.json()
+    rooms_dict = {}
+    for room in rooms:
+        rooms_dict[room['room_name']] = {
+            'room_id': room['room_id'],
+            'capacity': room['capacity']
+        }
+    
+    st.write('### Rooms')
+    df_rooms = pd.DataFrame(rooms)
+    df_rooms.columns = ['Room name', 'capacity', 'Room id']
+    st.table(df_rooms)
 
     with st.form(key='booking'):
-        booking_id: int = random.randint(0, 10)
-        user_id: int = random.randint(0, 10)
-        room_id: int = random.randint(0, 10)
-        booked_num: int = st.number_input('Booked number', step=1)
+        user_name: str = st.selectbox('User name', users_dict.keys())
+        room_name: str = st.selectbox('Room name', rooms_dict.keys())
+        booked_num: int = st.number_input('Booked number', step=1, min_value=1)
         date = st.date_input('Date: ', min_value=datetime.date.today())
         start_time = st.time_input('Start time: ', value=datetime.time(hour=9, minute=0))
         end_time = st.time_input('End time: ', value=datetime.time(hour=20, minute=0))
+        submit_button = st.form_submit_button(label='Add')
+
+    if submit_button:
+        user_id: int = users_dict[user_name]
+        room_id: int = rooms_dict[room_name]['room_id']
+        capacity: int = rooms_dict[room_name]['capacity']
+
         data = {
-            'booking_id': booking_id,
             'user_id': user_id,
             'room_id': room_id,
             'booked_num': booked_num,
@@ -79,16 +106,15 @@ elif page == 'bookings':
                 minute=end_time.minute
             ).isoformat()
         }
-        submit_button = st.form_submit_button(label='Send')
 
-    if submit_button:
-        st.write('## Send data')
-        st.json(data)
-        st.write('## Response')
-        url = 'http://127.0.0.1:8000/bookings'
-        res = requests.post(
-            url,
-            data=json.dumps(data)
-        )
-        st.write(res.status_code)
-        st.json(res.json())
+        if booked_num <= capacity:
+            url = 'http://127.0.0.1:8000/bookings'
+            res = requests.post(
+                url,
+                data=json.dumps(data)
+            )
+            if res.status_code == 200:
+                st.success('Add success')
+            st.json(res.json())
+        else:
+            st.error(f'{room_name} has a capacity of {capacity} people')
