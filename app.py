@@ -54,28 +54,65 @@ elif page == 'bookings':
     url_users = 'http://127.0.0.1:8000/users'
     res = requests.get(url_users)
     users = res.json()
-    users_dict = {}
+    users_name = {}
     for user in users:
-        users_dict[user['user_name']] = user['user_id']
+        users_name[user['user_name']] = user['user_id']
 
     url_rooms = 'http://127.0.0.1:8000/rooms'
     res = requests.get(url_rooms)
     rooms = res.json()
-    rooms_dict = {}
+    rooms_name = {}
     for room in rooms:
-        rooms_dict[room['room_name']] = {
+        rooms_name[room['room_name']] = {
             'room_id': room['room_id'],
             'capacity': room['capacity']
         }
-    
+
     st.write('### Rooms')
     df_rooms = pd.DataFrame(rooms)
     df_rooms.columns = ['Room name', 'capacity', 'Room id']
     st.table(df_rooms)
 
+    url_bookings = 'http://127.0.0.1:8000/bookings'
+    res = requests.get(url_bookings)
+    bookings = res.json()
+    df_bookings = pd.DataFrame(bookings)
+
+    users_id = {}
+    for user in users:
+        users_id[user['user_id']] = user['user_name']
+
+    rooms_id = {}
+    for room in rooms:
+        rooms_id[room['room_id']] = {
+            'room_name': room['room_name'],
+            'capacity': room['capacity']
+        }
+
+    def to_user_name(x): return users_id[x]
+    def to_room_name(x): return rooms_id[x]['room_name']
+    def to_datetime(x): return datetime.datetime.fromisoformat(x).strftime('%Y/%m/%d %H:%M')
+
+    df_bookings['user_id'] = df_bookings['user_id'].map(to_user_name)
+    df_bookings['room_id'] = df_bookings['room_id'].map(to_room_name)
+    df_bookings['start_datetime'] = df_bookings['start_datetime'].map(to_datetime)
+    df_bookings['end_datetime'] = df_bookings['end_datetime'].map(to_datetime)
+
+    df_bookings = df_bookings.rename(columns={
+        'user_id': 'User name',
+        'room_id': 'Room name',
+        'booked_num': 'Booked number',
+        'start_datetime': 'Start datetime',
+        'end_datetime': 'End datetime',
+        'booking_id': 'Booking id'
+    })
+
+    st.write('### Bookings')
+    st.table(df_bookings)
+
     with st.form(key='booking'):
-        user_name: str = st.selectbox('User name', users_dict.keys())
-        room_name: str = st.selectbox('Room name', rooms_dict.keys())
+        user_name: str = st.selectbox('User name', users_name.keys())
+        room_name: str = st.selectbox('Room name', rooms_name.keys())
         booked_num: int = st.number_input('Booked number', step=1, min_value=1)
         date = st.date_input('Date: ', min_value=datetime.date.today())
         start_time = st.time_input('Start time: ', value=datetime.time(hour=9, minute=0))
@@ -83,9 +120,9 @@ elif page == 'bookings':
         submit_button = st.form_submit_button(label='Add')
 
     if submit_button:
-        user_id: int = users_dict[user_name]
-        room_id: int = rooms_dict[room_name]['room_id']
-        capacity: int = rooms_dict[room_name]['capacity']
+        user_id: int = users_name[user_name]
+        room_id: int = rooms_name[room_name]['room_id']
+        capacity: int = rooms_name[room_name]['capacity']
 
         data = {
             'user_id': user_id,
