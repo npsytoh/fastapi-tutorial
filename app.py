@@ -1,9 +1,12 @@
-import streamlit as st
 import datetime
 import requests
 import json
+
+import streamlit as st
 import pandas as pd
 
+
+BASE_URL = 'http://127.0.0.1:8000'
 page = st.sidebar.selectbox('Choose your page', ['users', 'rooms', 'bookings'])
 
 if page == 'users':
@@ -17,7 +20,7 @@ if page == 'users':
         submit_button = st.form_submit_button(label='Add')
 
     if submit_button:
-        url = 'http://127.0.0.1:8000/users'
+        url = f'{BASE_URL}/users'
         res = requests.post(
             url,
             data=json.dumps(data)
@@ -39,7 +42,7 @@ elif page == 'rooms':
         submit_button = st.form_submit_button(label='Add')
 
     if submit_button:
-        url = 'http://127.0.0.1:8000/rooms'
+        url = f'{BASE_URL}/rooms'
         res = requests.post(
             url,
             data=json.dumps(data)
@@ -51,14 +54,14 @@ elif page == 'rooms':
 elif page == 'bookings':
     st.title('Booking add')
 
-    url_users = 'http://127.0.0.1:8000/users'
+    url_users = f'{BASE_URL}/users'
     res = requests.get(url_users)
     users = res.json()
     users_name = {}
     for user in users:
         users_name[user['user_name']] = user['user_id']
 
-    url_rooms = 'http://127.0.0.1:8000/rooms'
+    url_rooms = f'{BASE_URL}/rooms'
     res = requests.get(url_rooms)
     rooms = res.json()
     rooms_name = {}
@@ -73,7 +76,7 @@ elif page == 'bookings':
     df_rooms.columns = ['Room name', 'capacity', 'Room id']
     st.table(df_rooms)
 
-    url_bookings = 'http://127.0.0.1:8000/bookings'
+    url_bookings = f'{BASE_URL}/bookings'
     res = requests.get(url_bookings)
     bookings = res.json()
     df_bookings = pd.DataFrame(bookings)
@@ -145,7 +148,7 @@ elif page == 'bookings':
         }
 
         if booked_num <= capacity:
-            url = 'http://127.0.0.1:8000/bookings'
+            url = f'{BASE_URL}/bookings'
             res = requests.post(
                 url,
                 data=json.dumps(data)
