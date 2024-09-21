@@ -147,7 +147,13 @@ elif page == 'bookings':
             ).isoformat()
         }
 
-        if booked_num <= capacity:
+        if booked_num > capacity:
+            st.error(f'{room_name} has a capacity of {capacity} people')
+        elif start_time > end_time:
+            st.error('Start time error')
+        elif start_time < datetime.time(hour=9, minute=0, second=0) or end_time > datetime.time(hour=20, minute=0, second=0):
+            st.error('Time range error')
+        else:
             url = f'{BASE_URL}/bookings'
             res = requests.post(
                 url,
@@ -155,6 +161,6 @@ elif page == 'bookings':
             )
             if res.status_code == 200:
                 st.success('Add success')
+            elif res.status_code == 404 and res.json()['detail'] == 'Already booked':
+                st.error('Already booked')
             st.json(res.json())
-        else:
-            st.error(f'{room_name} has a capacity of {capacity} people')
